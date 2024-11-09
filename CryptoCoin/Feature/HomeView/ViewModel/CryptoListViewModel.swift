@@ -11,27 +11,36 @@ import Foundation
 class CryptoListViewModel {
   private let service: CryptoServiceProtocol
   private let filterManager: FilterManagerProtocol
+  private let databaseManager: DatabaseManagerProtocol
   private(set) var coins: [CryptoCoin] = []
   private(set) var filteredCoins: [CryptoCoin] = []
   
   var filterCriteria = FilterCriteria()
   var didUpdate: (() -> Void)?
   
-  init(service: CryptoServiceProtocol = CryptoService(), filter: FilterManagerProtocol = FilterManager()) {
+  init(service: CryptoServiceProtocol = CryptoService(), filter: FilterManagerProtocol = FilterManager(), database: DatabaseManagerProtocol = DatabaseManager()) {
     self.service = service
     self.filterManager = filter
+    self.databaseManager = database
   }
   
   func fetchCoins() {
-    service.fetchCryptoCoins { [weak self] (result: Result<[CryptoCoin], any Error>) in
-      switch result {
-        case .success(let coins):
-          DispatchQueue.main.async { [weak self] in
-            self?.coins = coins
-            self?.applyFilters()
-          }
-        case .failure(let error):
-          print("Error fetching coins: \(error)")
+    
+    if let coins = fetchCoinsFromCoreData(), coins.count > 0 {
+      self.coins = coins
+      self.applyFilters()
+    } else {
+      service.fetchCryptoCoins { [weak self] (result: Result<[CryptoCoin], any Error>) in
+        switch result {
+          case .success(let coins):
+            DispatchQueue.main.async { [weak self] in
+              self?.coins = coins
+              self?.storeCoinsInDatabase(coins)
+              self?.applyFilters()
+            }
+          case .failure(let error):
+            print("Error fetching coins: \(error)")
+        }
       }
     }
   }
@@ -65,4 +74,26 @@ class CryptoListViewModel {
     filterCriteria = FilterCriteria()
     applyFilters()
   }
+  
+  // Store fetched coins in Core Data
+  private func storeCoinsInDatabase(_ coins: [CryptoCoin]) {
+    coins.forEach { coin in
+      do {
+        try databaseManager.saveCryptoCoin(coin)
+      } catch {
+        print("Failed to save coin: \(error)")
+      }
+    }
+  }
+  
+  // Fetch coins from Core Data (if API fails or no network)
+  func fetchCoinsFromCoreData() -> [CryptoCoin]? {
+    do {
+      return try databaseManager.fetchCryptoCoins()
+    } catch {
+      print("Failed to fetch coins from Core Data: \(error)")
+      return nil
+    }
+  }
+  
 }
