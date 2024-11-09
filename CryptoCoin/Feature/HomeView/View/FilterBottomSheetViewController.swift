@@ -17,7 +17,7 @@ class FilterBottomViewController: UIViewController {
   var buttons: [UIButton] = []
   
   let buttonSpacing: CGFloat = 10
-  let padding: CGFloat = 0
+  let padding: CGFloat = 10
   
   override func viewDidLoad() {
     super.viewDidLoad()
