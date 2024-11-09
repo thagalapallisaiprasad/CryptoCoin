@@ -13,6 +13,16 @@ struct Constants {
   }
   
   struct StringConstants {
-    
+    static let cellIdentifier = "CoinCell"
   }
+  
+  struct ImageConstants {
+    static let newBadge = "New"
+    static let coinActive = "Coin_Active"
+    static let tokenActive = "Token_Active"
+    static let inactive = "Inactive"
+    static let searchImage = "magnifyingglass"
+    static let circleImage = "checkmark.circle.fill"
+  }
+  
 }

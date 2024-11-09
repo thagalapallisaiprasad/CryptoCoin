@@ -9,7 +9,7 @@
 import UIKit
 
 class FilterBottomViewController: UIViewController {
-  private let options = ["Active Coins", "Inactive Coins", "Only Tokens", "Only Coins", "New Coins"]
+  private let options = [CryptoTypes.activeCoin.rawValue, CryptoTypes.inactiveCoin.rawValue, CryptoTypes.onlyToken.rawValue, CryptoTypes.onlyCoin.rawValue, CryptoTypes.newCoin.rawValue]
   private var selectedOptions: Set<String> = []
   var filterSelectionHandler: (([String]) -> Void)?
   
@@ -97,7 +97,7 @@ class FilterBottomViewController: UIViewController {
       sender.setImage(nil, for: .normal)
       selectedOptions.remove(buttonText)
     } else {
-      sender.setImage(UIImage(systemName: "checkmark.circle.fill"), for: .normal)
+      sender.setImage(UIImage(systemName: Constants.ImageConstants.circleImage), for: .normal)
       selectedOptions.insert(buttonText)
     }
     

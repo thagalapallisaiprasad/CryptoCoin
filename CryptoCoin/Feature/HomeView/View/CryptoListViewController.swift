@@ -19,9 +19,37 @@ class CryptoListViewController: UIViewController, UITableViewDataSource {
     super.viewDidLoad()
     setupUI()
     bindViewModel()
+    viewModel.fetchCoins()
+  }
+  
+  private func setupUI() {
+    view.backgroundColor = .white
+    let headerView = UIView()
+    headerView.backgroundColor = .blue
+    headerView.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(headerView)
+    
+    let safeArea = view.safeAreaLayoutGuide
+    NSLayoutConstraint.activate([
+      headerView.topAnchor.constraint(equalTo: safeArea.topAnchor),
+      headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      headerView.heightAnchor.constraint(equalToConstant: 60)
+    ])
+    
+    setupSearchButton(headerView)
+    setupTableView(headerView, safeArea)
     setupLoader()
     showLoader()
-    viewModel.fetchCoins()
+  }
+  
+  private func bindViewModel() {
+    viewModel.didUpdate = { [weak self] in
+      DispatchQueue.main.async {
+        self?.hideLoader()
+        self?.tableView.reloadData()
+      }
+    }
   }
   
   private func setupLoader() {
@@ -51,10 +79,9 @@ class CryptoListViewController: UIViewController, UITableViewDataSource {
     loaderView.isHidden = true
   }
   
-  
   fileprivate func setupTableView(_ headerView: UIView, _ safeArea: UILayoutGuide) {
     tableView.dataSource = self
-    tableView.register(CoinTableViewCell.self, forCellReuseIdentifier: "CoinCell")
+    tableView.register(CoinTableViewCell.self, forCellReuseIdentifier: Constants.StringConstants.cellIdentifier)
     tableView.translatesAutoresizingMaskIntoConstraints = false
     view.addSubview(tableView)
     
@@ -67,7 +94,7 @@ class CryptoListViewController: UIViewController, UITableViewDataSource {
   }
   
   fileprivate func setupSearchButton(_ headerView: UIView) {
-    searchButton.setImage(UIImage(systemName: "magnifyingglass"), for: .normal)
+    searchButton.setImage(UIImage(systemName: Constants.ImageConstants.searchImage), for: .normal)
     searchButton.tintColor = .white
     searchButton.addTarget(self, action: #selector(showFilterBottomSheet), for: .touchUpInside)
     searchButton.translatesAutoresizingMaskIntoConstraints = false
@@ -79,34 +106,6 @@ class CryptoListViewController: UIViewController, UITableViewDataSource {
       searchButton.widthAnchor.constraint(equalToConstant: 30),
       searchButton.heightAnchor.constraint(equalToConstant: 30)
     ])
-  }
-  
-  private func setupUI() {
-    view.backgroundColor = .white
-    let headerView = UIView()
-    headerView.backgroundColor = .blue
-    headerView.translatesAutoresizingMaskIntoConstraints = false
-    view.addSubview(headerView)
-    
-    let safeArea = view.safeAreaLayoutGuide
-    NSLayoutConstraint.activate([
-      headerView.topAnchor.constraint(equalTo: safeArea.topAnchor),
-      headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      headerView.heightAnchor.constraint(equalToConstant: 60)
-    ])
-    
-    setupSearchButton(headerView)
-    setupTableView(headerView, safeArea)
-  }
-  
-  private func bindViewModel() {
-    viewModel.didUpdate = { [weak self] in
-      DispatchQueue.main.async {
-        self?.hideLoader()
-        self?.tableView.reloadData()
-      }
-    }
   }
   
   @objc private func showFilterBottomSheet() {
@@ -125,29 +124,29 @@ class CryptoListViewController: UIViewController, UITableViewDataSource {
   }
   
   private func applyMultipleFilters(_ filters: [String]) {
-    // Clear any previously applied filters
-    viewModel.clearFilters()
+    var criteria = FilterCriteria()
     
-    // Apply each filter from the selected filters list
     for filter in filters {
       switch filter {
-        case "Active Coins":
-          viewModel.toggleActiveFilter()
-        case "Inactive Coins":
-          viewModel.toggleInactiveFilter()
-        case "Only Tokens":
-          viewModel.toggleTokensFilter()
-        case "Only Coins":
-          viewModel.toggleCoinsFilter()
-        case "New Coins":
-          viewModel.toggleNewCoinsFilter()
+        case CryptoTypes.activeCoin.rawValue:
+          criteria.isActive = true
+          criteria.type = CryptoTypes.coin.rawValue
+        case CryptoTypes.inactiveCoin.rawValue:
+          criteria.isActive = false
+          criteria.type = CryptoTypes.coin.rawValue
+        case CryptoTypes.onlyToken.rawValue:
+          criteria.type = CryptoTypes.token.rawValue
+        case CryptoTypes.onlyCoin.rawValue:
+          criteria.type = CryptoTypes.coin.rawValue
+        case CryptoTypes.newCoin.rawValue:
+          criteria.isNew = true
+          criteria.type = CryptoTypes.coin.rawValue
         default:
           break
       }
     }
     
-    // Refresh the filtered coins list
-    viewModel.applyFilters()
+    viewModel.updateFilter(criteria)
   }
   
   func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -155,7 +154,7 @@ class CryptoListViewController: UIViewController, UITableViewDataSource {
   }
   
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    let cell = tableView.dequeueReusableCell(withIdentifier: "CoinCell", for: indexPath) as! CoinTableViewCell
+    let cell = tableView.dequeueReusableCell(withIdentifier: Constants.StringConstants.cellIdentifier, for: indexPath) as! CoinTableViewCell
     let coin = viewModel.filteredCoins[indexPath.row]
     cell.configure(with: coin)
     return cell

@@ -39,7 +39,7 @@ class CoinTableViewCell: UITableViewCell {
     // Setup new data badge (small circle on top of image)
     newDataBadge = UIImageView()
     newDataBadge.translatesAutoresizingMaskIntoConstraints = false
-    newDataBadge.image = UIImage(named: "New")
+    newDataBadge.image = UIImage(named: Constants.ImageConstants.newBadge)
     newDataBadge.isHidden = true
     contentView.addSubview(newDataBadge)
     setupConstraints()
@@ -81,11 +81,11 @@ class CoinTableViewCell: UITableViewCell {
     nameLabel.text = coin.name
     symbolLabel.text = coin.symbol
     if (coin.isActive && coin.type == CryptoTypes.coin.rawValue) {
-      imageViewContainer.image =  UIImage(named: "Coin_Active")
+      imageViewContainer.image =  UIImage(named: Constants.ImageConstants.coinActive)
     } else if(coin.isActive && coin.type == CryptoTypes.token.rawValue) {
-      imageViewContainer.image =  UIImage(named: "Token_Active")
+      imageViewContainer.image =  UIImage(named: Constants.ImageConstants.tokenActive)
     } else {
-      imageViewContainer.image =  UIImage(named: "Inactive")
+      imageViewContainer.image =  UIImage(named: Constants.ImageConstants.inactive)
     }
     newDataBadge.isHidden = !coin.isNew
     nameLabel.textColor = coin.isActive ? .black : .gray

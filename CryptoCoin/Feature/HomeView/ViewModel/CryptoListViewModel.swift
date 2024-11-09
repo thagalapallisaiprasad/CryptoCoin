@@ -37,49 +37,32 @@ class CryptoListViewModel {
   }
   
   func applyFilters() {
-    filteredCoins = filterManager.filter(coins: coins, criteria: filterCriteria)
+    // Filters applied to coins
+    filteredCoins = coins.filter {
+      ($0.isActive == filterCriteria.isActive || filterCriteria.isActive == nil) &&
+      ($0.isNew == filterCriteria.isNew || filterCriteria.isNew == nil) &&
+      ($0.type == filterCriteria.type || filterCriteria.type == nil)
+    }
+    
+    // Notify any observers to update the UI
     didUpdate?()
   }
   
-  func toggleActiveFilter() {
-    filterCriteria.isActive = !(filterCriteria.isActive ?? false)
+  func updateFilter(_ criteria: FilterCriteria) {
+    filterCriteria = criteria
     applyFilters()
   }
   
-  func toggleInactiveFilter() {
-    filterCriteria.isActive = filterCriteria.isActive == nil || filterCriteria.isActive == true ? false : nil
-    applyFilters()
-  }
-  
-  func toggleTokensFilter() {
-    filterCriteria.type = filterCriteria.type == "Token" ? nil : "Token"
-    applyFilters()
-  }
-  
-  func toggleCoinsFilter() {
-    filterCriteria.type = filterCriteria.type == "Coin" ? nil : "Coin"
-    applyFilters()
-  }
-  
-  func toggleNewCoinsFilter() {
-    filterCriteria.isNew = filterCriteria.isNew == true ? nil : true
-    applyFilters()
+  func searchCoins(query: String) {
+    filteredCoins = query.isEmpty ? coins : coins.filter {
+      $0.name.localizedCaseInsensitiveContains(query) ||
+      $0.symbol.localizedCaseInsensitiveContains(query)
+    }
+    didUpdate?()
   }
   
   func clearFilters() {
     filterCriteria = FilterCriteria()
     applyFilters()
-  }
-  
-  func searchCoins(query: String) {
-    if query.isEmpty {
-      filteredCoins = coins
-    } else {
-      filteredCoins = coins.filter { coin in
-        coin.name.lowercased().contains(query.lowercased()) ||
-        coin.symbol.lowercased().contains(query.lowercased())
-      }
-    }
-    didUpdate?()
   }
 }
