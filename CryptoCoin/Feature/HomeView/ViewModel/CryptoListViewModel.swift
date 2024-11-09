@@ -10,7 +10,6 @@ import Foundation
 @MainActor
 class CryptoListViewModel {
   private let service: CryptoServiceProtocol
-  private let filterManager: FilterManagerProtocol
   private let databaseManager: DatabaseManagerProtocol
   private(set) var coins: [CryptoCoin] = []
   private(set) var filteredCoins: [CryptoCoin] = []
@@ -18,28 +17,31 @@ class CryptoListViewModel {
   var filterCriteria = FilterCriteria()
   var didUpdate: (() -> Void)?
   
-  init(service: CryptoServiceProtocol = CryptoService(), filter: FilterManagerProtocol = FilterManager(), database: DatabaseManagerProtocol = DatabaseManager()) {
+  init(service: CryptoServiceProtocol = CryptoService(), database: DatabaseManagerProtocol = DatabaseManager()) {
     self.service = service
-    self.filterManager = filter
     self.databaseManager = database
   }
   
   func fetchCoins() {
-    
-    if let coins = fetchCoinsFromCoreData(), coins.count > 0 {
-      self.coins = coins
-      self.applyFilters()
+    if let mockService = service as? MockCryptoService {
+      // Use mock data if the service is MockCryptoService
+      self.coins = mockService.mockCoins
     } else {
-      service.fetchCryptoCoins { [weak self] (result: Result<[CryptoCoin], any Error>) in
-        switch result {
-          case .success(let coins):
-            DispatchQueue.main.async { [weak self] in
-              self?.coins = coins
-              self?.storeCoinsInDatabase(coins)
-              self?.applyFilters()
-            }
-          case .failure(let error):
-            print("Error fetching coins: \(error)")
+      if let coins = fetchCoinsFromCoreData(), coins.count > 0 {
+        self.coins = coins
+        self.applyFilters()
+      } else {
+        service.fetchCryptoCoins { [weak self] (result: Result<[CryptoCoin], any Error>) in
+          switch result {
+            case .success(let coins):
+              DispatchQueue.main.async { [weak self] in
+                self?.coins = coins
+                self?.storeCoinsInDatabase(coins)
+                self?.applyFilters()
+              }
+            case .failure(let error):
+              print("Error fetching coins: \(error)")
+          }
         }
       }
     }

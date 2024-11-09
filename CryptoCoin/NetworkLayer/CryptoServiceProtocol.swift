@@ -13,8 +13,13 @@ protocol CryptoServiceProtocol {
 
 class MockCryptoService: CryptoServiceProtocol {
   var mockCoins: [CryptoCoin] = []
+  var shouldFail = false
   
   func fetchCryptoCoins<T: Decodable>(completion: @Sendable @escaping (Result<T, any Error>) -> Void) {
-    completion(.success(mockCoins as! T))
+    if shouldFail {
+      completion(.failure(NSError(domain: "MockError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to fetch coins"])))
+    } else {
+      completion(.success(mockCoins as! T))
+    }
   }
 }

@@ -56,4 +56,12 @@ final class CryptoListViewModelTests: XCTestCase {
     // Assert that all coins are displayed after clearing filters
     XCTAssertEqual(viewModel.filteredCoins.count, initialCoins.count, "Expected all coins to be displayed after clearing filters.")
   }
+  
+  func testFetchCoinsFailure() {
+    mockService.shouldFail = true
+    viewModel.fetchCoins()
+    XCTAssertTrue(viewModel.coins.isEmpty, "Expected coins array to be empty after failure.")
+    XCTAssertTrue(viewModel.filteredCoins.isEmpty, "Expected filtered coins to be empty after failure.")
+  }
+
 }
