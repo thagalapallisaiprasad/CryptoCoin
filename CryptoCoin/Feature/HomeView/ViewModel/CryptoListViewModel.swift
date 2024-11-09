@@ -64,14 +64,6 @@ class CryptoListViewModel {
     applyFilters()
   }
   
-  func searchCoins(query: String) {
-    filteredCoins = query.isEmpty ? coins : coins.filter {
-      $0.name.localizedCaseInsensitiveContains(query) ||
-      $0.symbol.localizedCaseInsensitiveContains(query)
-    }
-    didUpdate?()
-  }
-  
   func clearFilters() {
     filterCriteria = FilterCriteria()
     applyFilters()
