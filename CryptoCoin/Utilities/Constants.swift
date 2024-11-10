@@ -23,6 +23,8 @@ struct Constants {
     static let inactive = "Inactive"
     static let searchImage = "magnifyingglass"
     static let circleImage = "checkmark.circle.fill"
+    static let cancelImage = "xmark.circle.fill"
+    static let filterlImage = "line.3.horizontal.decrease"
   }
   
 }

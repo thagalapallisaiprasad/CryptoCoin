@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CryptoCoin: Codable, Sendable {
+struct CryptoCoin: Codable, Hashable {
   let name: String
   let symbol: String
   let type: String

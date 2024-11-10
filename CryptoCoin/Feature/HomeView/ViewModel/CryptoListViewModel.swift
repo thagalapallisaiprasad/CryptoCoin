@@ -9,7 +9,7 @@ import Foundation
 
 @MainActor
 class CryptoListViewModel {
-  private let service: CryptoServiceProtocol
+  private let networkProtocol: NetworkProtocol
   private let databaseManager: DatabaseManagerProtocol
   private(set) var coins: [CryptoCoin] = []
   private(set) var filteredCoins: [CryptoCoin] = []
@@ -17,56 +17,86 @@ class CryptoListViewModel {
   var filterCriteria = FilterCriteria()
   var didUpdate: (() -> Void)?
   
-  init(service: CryptoServiceProtocol = CryptoService(), database: DatabaseManagerProtocol = DatabaseManager()) {
-    self.service = service
+  init(networkProtocol: NetworkProtocol = URLSession.shared, database: DatabaseManagerProtocol = DatabaseManager()) {
+    self.networkProtocol = networkProtocol
     self.databaseManager = database
   }
   
   func fetchCoins() {
-    if let mockService = service as? MockCryptoService {
-      // Use mock data if the service is MockCryptoService
-      self.coins = mockService.mockCoins
+    // Check if coins exist in local database first
+    if let coins = fetchCoinsFromCoreData(), coins.count > 0 {
+      self.coins = coins
+      didUpdate?()
     } else {
-      if let coins = fetchCoinsFromCoreData(), coins.count > 0 {
-        self.coins = coins
-        self.applyFilters()
-      } else {
-        service.fetchCryptoCoins { [weak self] (result: Result<[CryptoCoin], any Error>) in
-          switch result {
-            case .success(let coins):
-              DispatchQueue.main.async { [weak self] in
-                self?.coins = coins
-                self?.storeCoinsInDatabase(coins)
-                self?.applyFilters()
-              }
-            case .failure(let error):
-              print("Error fetching coins: \(error)")
-          }
+      // Fetch from the network if no local data exists
+      let url = URL(string: Constants.API.baseURL)!
+      networkProtocol.sessionDataTask(with: url) { [weak self] (result: Result<[CryptoCoin], Error>) in
+        switch result {
+          case .success(let coins):
+            // Update UI and database when data is fetched
+            DispatchQueue.main.async { [weak self] in
+              self?.coins = coins
+              self?.storeCoinsInDatabase(coins)
+              self?.didUpdate?()
+            }
+          case .failure(let error):
+            // Handle failure to fetch coins
+            print("Error fetching coins: \(error)")
         }
       }
     }
   }
   
-  func applyFilters() {
-    // Filters applied to coins
-    filteredCoins = coins.filter {
-      ($0.isActive == filterCriteria.isActive || filterCriteria.isActive == nil) &&
-      ($0.isNew == filterCriteria.isNew || filterCriteria.isNew == nil) &&
-      ($0.type == filterCriteria.type || filterCriteria.type == nil)
+  func updateFilters(criteria: FilterCriteria, isSelected: Bool) {
+    
+    var result: [CryptoCoin] = filteredCoins
+    
+    if let isActive = criteria.isActive, let type = criteria.type {
+      if type == "coin" || type == "token" && isActive {
+        if isSelected {
+          let filteredCoins = coins.filter { $0.isActive == isActive && $0.type == type }
+          result.append(contentsOf: filteredCoins)
+        } else {
+          result.removeAll { $0.isActive == isActive && $0.type == type }
+        }
+      }
+      if (type == "coin" || type == "token") && isActive == false {
+        if isSelected {
+          let filteredCoins = coins.filter { $0.isActive == false && $0.type == type }
+          result.append(contentsOf: filteredCoins)
+        } else {
+          result.removeAll{$0.isActive == false && $0.type == type}
+        }
+      }
+    } else if let isNew = criteria.isNew, criteria.type == "coin" {
+      if isSelected {
+        let newCoins = coins.filter { $0.isNew == isNew && $0.type == "coin" }
+        result.append(contentsOf: newCoins)
+      } else {
+        result.removeAll { $0.isNew == isNew && $0.type == "coin" }
+      }
+    } else if let type = criteria.type {
+      if isSelected {
+        let filteredByType = coins.filter { $0.type == type }
+        result.append(contentsOf: filteredByType)
+      } else {
+        result.removeAll { $0.type == type }
+      }
     }
     
-    // Notify any observers to update the UI
+    filteredCoins = Array(Set(result))
     didUpdate?()
   }
   
-  func updateFilter(_ criteria: FilterCriteria) {
-    filterCriteria = criteria
-    applyFilters()
+  func removeAllFilter() {
+    filteredCoins.removeAll()
   }
   
-  func clearFilters() {
-    filterCriteria = FilterCriteria()
-    applyFilters()
+  func search(query: String) {
+    filteredCoins = coins.filter { item in
+      item.name.lowercased().contains(query.lowercased()) || item.symbol.lowercased().contains(query.lowercased())
+    }
+    didUpdate?()
   }
   
   // Store fetched coins in Core Data

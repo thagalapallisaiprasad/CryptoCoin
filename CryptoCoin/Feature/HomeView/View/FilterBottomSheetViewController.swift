@@ -11,7 +11,7 @@ import UIKit
 class FilterBottomViewController: UIViewController {
   private let options = [CryptoTypes.activeCoin.rawValue, CryptoTypes.inactiveCoin.rawValue, CryptoTypes.onlyToken.rawValue, CryptoTypes.onlyCoin.rawValue, CryptoTypes.newCoin.rawValue]
   private var selectedOptions: Set<String> = []
-  var filterSelectionHandler: (([String]) -> Void)?
+  var filterSelectionHandler: ((String, Bool) -> Void)?
   
   var scrollView: UIScrollView!
   var buttons: [UIButton] = []
@@ -92,16 +92,17 @@ class FilterBottomViewController: UIViewController {
   
   @objc private func buttonTapped(_ sender: UIButton) {
     let buttonText = sender.title(for: .normal) ?? ""
-    
+    var selected = false
     if selectedOptions.contains(buttonText) {
       sender.setImage(nil, for: .normal)
+      selected = false
+      filterSelectionHandler?(buttonText, selected)
       selectedOptions.remove(buttonText)
     } else {
       sender.setImage(UIImage(systemName: Constants.ImageConstants.circleImage), for: .normal)
       selectedOptions.insert(buttonText)
+      selected = true
+      filterSelectionHandler?(buttonText, selected)
     }
-    
-    // Call the handler with the updated selected options
-    filterSelectionHandler?(Array(selectedOptions))
   }
 }
